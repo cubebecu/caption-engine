@@ -32,7 +32,7 @@ Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
 ## Screenshot
 
-<!-- TODO: add Web UI screenshot -->
+![Web UI](raw/i1.png)
 
 ---
 
