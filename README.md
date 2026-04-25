@@ -9,6 +9,8 @@ Upload a screenshot, diagram, or CLI output — get a structured markdown descri
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker Pulls](https://img.shields.io/badge/Docker-GHCR.io-2496ED?logo=docker)](https://github.com/cubebecu/caption-engine/pkgs/container/caption-engine)
 [![GPU](https://img.shields.io/badge/GPU-NVIDIA%204GB%2B-brightgreen?logo=nvidia)](https://developer.nvidia.com/cuda-gpus)
+![Built offline](https://img.shields.io/badge/built_with-offline_LLM-blueviolet)
+![Runs offline](https://img.shields.io/badge/runs-fully_offline-green)
 
 </div>
 
@@ -52,6 +54,8 @@ Full technical reference — API endpoints, configuration, GPU requirements, bui
 [DOCS.md](DOCS.md)
 
 ---
+## Author
+[cubebecu](https://github.com/cubebecu)
 
 ## License
 
