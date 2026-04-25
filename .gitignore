@@ -32,8 +32,11 @@ build/
 .DS_Store
 Thumbs.db
 
-# Docker
-.docker/
+# Llama.cpp binaries and shared libraries
+llama-server
+libggml*.so*
+libllama*.so*
+libmtmd*.so*
 
 # Project memory
 .qwen/
