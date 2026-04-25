@@ -16,7 +16,9 @@ Upload a screenshot, diagram, or CLI output — get a structured markdown descri
 
 ---
 
-## Quick Start
+![Web UI](raw/i1.png)
+
+---
 
 ## Prerequisites
 
@@ -38,11 +40,8 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 ```
 
-## To install Caption-engine
+## To install caption engine
 ```bash
-# Pull the Docker image
-docker pull ghcr.io/cubebecu/caption-engine:latest
-
 # Pull compose file
 curl -O https://raw.githubusercontent.com/cubebecu/caption-engine/main/docker-compose.yml
 
@@ -53,10 +52,6 @@ docker compose up -d
 Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
 > Upload an image, click **Generate Caption**, get markdown output.
-
----
-
-![Web UI](raw/i1.png)
 
 ---
 
