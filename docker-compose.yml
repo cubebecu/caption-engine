@@ -1,5 +1,6 @@
 services:
   caption-engine:
+    image: ghcr.io/cubebecu/caption-engine:latest
     container_name: caption-engine
     restart: unless-stopped
     ports:
