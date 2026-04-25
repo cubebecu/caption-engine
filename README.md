@@ -30,8 +30,6 @@ Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
 ---
 
-## Screenshot
-
 ![Web UI](raw/i1.png)
 
 ---
