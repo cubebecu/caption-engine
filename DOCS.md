@@ -2,15 +2,16 @@
 
 ## Architecture
 
-```
-┌──────────────┐     ┌──────────────────────────┐     ┌──────────────┐
-│  Image input  │────▶│  caption-engine            │────▶│  Caption     │
-│  (PNG/JPG)   │     │  (llama.cpp + Gemma-3-4B)  │     │  (JSON/MD)   │
-└──────────────┘     └──────────────────────────┘     └──────────────┘
-                          GPU-only, 4GB VRAM min
+```mermaid
+graph LR
+    A["Image input<br/>(PNG / JPG)"] --> B["caption-engine<br/>(llama.cpp + Gemma-3-4B)"]
+    B --> C["Caption<br/>(Markdown)"]
+    style B fill:#1a1a2e,stroke:#0f3460,color:#fff
+    style A fill:#16213e,stroke:#0f3460,color:#fff
+    style C fill:#16213e,stroke:#0f3460,color:#fff
 ```
 
-**Base image:** `nvidia/cuda:13.2.1-runtime-ubuntu24.04`
+> GPU-only, minimum 4 GB VRAM. Base image: `nvidia/cuda:13.2.1-runtime-ubuntu24.04`
 
 ## Web UI
 
