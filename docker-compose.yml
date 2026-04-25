@@ -1,6 +1,5 @@
 services:
   caption-engine:
-    build: .
     container_name: caption-engine
     restart: unless-stopped
     ports:
