@@ -1,0 +1,39 @@
+# Environment
+.env
+
+# Old files (archived)
+old/
+
+# Model files (large binaries)
+models/
+
+# Runtime data
+jobs/
+logs/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.eggs/
+*.egg-info/
+dist/
+build/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+
+# Project memory
+.qwen/

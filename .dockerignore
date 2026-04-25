@@ -1,0 +1,12 @@
+models/
+jobs/
+__pycache__/
+*.egg-info/
+.git/
+.env
+llama-bin.tar.gz
+/tmp/llama.cpp/
+.qwen/
+logs/
+*.log
+system_prompt_custom.md

@@ -1,0 +1,32 @@
+services:
+  caption-engine:
+    build: .
+    container_name: caption-engine
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=/app/models/gemma-3-4b-it/gemma-3-4b-it-Q4_K_M.gguf
+      - MMPROJ_PATH=/app/models/gemma-3-4b-it/mmproj-model-f16.gguf
+      - LLAMA_API_PORT=8080
+      - FASTAPI_PORT=8000
+      - GPU_LAYERS=32
+      - CONTEXT_SIZE=4096
+      - WORKERS=1
+      - BATCH_SIZE=512
+      - JOBS_DIR=/app/jobs
+      - LOG_FILE=/app/logs/server.log
+    volumes:
+      - model-data:/app/models
+      - job-data:/app/jobs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  model-data:
+  job-data:
