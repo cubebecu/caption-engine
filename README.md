@@ -22,6 +22,9 @@ Upload a screenshot, diagram, or CLI output — get a structured markdown descri
 # Pull the Docker image
 docker pull ghcr.io/cubebecu/caption-engine:latest
 
+# Pull compose file
+curl -O https://raw.githubusercontent.com/cubebecu/caption-engine/main/docker-compose.yml
+
 # Start the service
 docker compose up -d
 ```
