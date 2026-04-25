@@ -16,7 +16,7 @@ Upload a screenshot, diagram, or CLI output — get a structured markdown descri
 
 ---
 
-![Web UI](raw/i1.png)
+![Web UI](raw/caption-gif3.gif)
 
 ---
 
