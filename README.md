@@ -2,7 +2,7 @@
 
 # caption-engine
 
-### AI-powered image captioning for technical documentation
+### Image captioning for technical documentation
 
 Upload a screenshot, diagram, or CLI output — get a structured markdown description.
 
