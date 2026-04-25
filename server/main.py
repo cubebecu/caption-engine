@@ -193,8 +193,32 @@ def check_gpu_requirements():
             sys.exit(1)
 
     # torch path: check per-GPU VRAM
-    gpu_count = torch.cuda.device_count()
+    try:
+        gpu_count = torch.cuda.device_count()
+    except AssertionError:
+        gpu_count = 0
+
     if gpu_count == 0:
+        # torch has no CUDA or no GPUs — fall back to nvidia-smi
+        try:
+            result = subprocess.run(
+                ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                gpus = [line.strip() for line in result.stdout.strip().split("\n") if line.strip()]
+                total_vram = sum(int(line.split()[0]) for line in gpus)
+                if total_vram < 4096:
+                    print(
+                        f"FATAL: Insufficient VRAM. Total: {total_vram}MB, "
+                        f"required: 4096MB (4GB). GPU-only mode enforced.",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+                print(f"✅ GPU check passed (nvidia-smi fallback): {total_vram}MB total VRAM")
+                return
+        except FileNotFoundError:
+            pass
         print("FATAL: No CUDA GPUs detected. GPU-only mode enforced.", file=sys.stderr)
         sys.exit(1)
 
