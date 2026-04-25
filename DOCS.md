@@ -153,11 +153,3 @@ JOBS_DIR=/app/jobs
 ```bash
 docker compose up --build -d
 ```
-
-## Roadmap
-
-- [ ] Batch processing (multiple images per request)
-- [ ] OCR fallback (tesseract) for text-heavy images
-- [ ] Caption caching (Redis)
-- [ ] Export captions as batch
-- [ ] Support for Gemma-3-8B multimodal variant
