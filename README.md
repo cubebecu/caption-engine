@@ -22,7 +22,7 @@ Upload a screenshot, diagram, or CLI output — get a structured markdown descri
 ## Prerequisites
 
 - Docker + Docker Compose
-- NVIDIA GPU (4 GB VRAM minimum), supported architectures: Ada, Ampere, Hopper, Blackwell
+- NVIDIA GPU (4 GB VRAM minimum), supported architectures: Ada, Ampere, Hopper, Blackwell, Turing
 - NVIDIA Driver 570+
 - [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
 
