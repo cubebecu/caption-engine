@@ -148,8 +148,4 @@ JOBS_DIR=/app/jobs
 | Overhead          | ~0.8 GB  |
 | **Total**         | **~4.0 GB** |
 
-## Building from Source
 
-```bash
-docker compose up --build -d
-```
