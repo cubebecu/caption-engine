@@ -1,36 +1,40 @@
-                                 Apache License
-                           Version 2.0, January 2004
-                        http://www.apache.org/licenses/
+caption-engine
+Copyright 2025-2026 cubebecu
 
-TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+Licensed under the Apache License, Version 2.0.
+See LICENSE for the full license text.
 
-   Copyright 2025-2026 cubebecu
+================================================================
+Third-party software bundled with this distribution
+================================================================
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+This product redistributes the following third-party software.
+Full license texts are available in the third_party/ directory.
 
-       http://www.apache.org/licenses/LICENSE-2.0
+- llama.cpp (https://github.com/ggml-org/llama.cpp)
+  MIT License — see third_party/llama.cpp/LICENSE
+  Bundled binaries: libggml*.so*, libllama*.so*, libmtmd*.so*, llama-server
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
-==========================================================================
-
-This product includes or uses the following third-party software:
-
-- fastapi (https://fastapi.tiangolo.com) — MIT License
-- uvicorn (https://www.uvicorn.org) — BSD License
-- python-multipart (https://github.com/expectless/python-multipart) — Apache 2.0
-- Pillow (https://python-pillow.org) — HPND License
-- pydantic (https://docs.pydantic.dev) — MIT License
+- fastapi (https://github.com/fastapi/fastapi) — MIT
+- uvicorn (https://github.com/encode/uvicorn) — BSD-3-Clause
+- pydantic (https://github.com/pydantic/pydantic) — MIT
+- Pillow (https://python-pillow.org) — HPND
+- aiohttp (https://github.com/aio-libs/aiohttp) — Apache 2.0 (see also third_party/aiohttp/NOTICE)
 - aiofiles (https://github.com/Tinche/aiofiles) — Apache 2.0
-- aiohttp (https://docs.aiohttp.org) — Apache 2.0
+- python-multipart (https://github.com/Kludex/python-multipart) — Apache 2.0
 
-This product uses the Gemma-3-4B model by Google, subject to the
-Gemma Terms of Use (https://ai.google.dev/gemma/terms).
-By using this software you agree to those terms.
-llama.cpp (https://github.com/ggerganov/llama.cpp) — MIT License.
+================================================================
+Bundled model weights — separately licensed
+================================================================
+
+This product uses the Gemma-3-4B model by Google, distributed under the
+Gemma Terms of Use. Gemma is NOT licensed under Apache 2.0 — it is subject
+to Google's own terms, including a Prohibited Use Policy with binding
+restrictions on what Gemma may be used for.
+
+By using, copying, modifying, or distributing this software you agree to
+the Gemma Terms of Use and Prohibited Use Policy.
+
+  - Terms of Use:        gemma/TERMS_OF_USE.md
+  - Prohibited Use:      gemma/PROHIBITED_USE_POLICY.md
+  - Latest version:      https://ai.google.dev/gemma/terms

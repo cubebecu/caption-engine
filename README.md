@@ -6,7 +6,6 @@
 
 Upload a screenshot, diagram, or CLI output — get a structured markdown description.
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker Pulls](https://img.shields.io/badge/Docker-GHCR.io-2496ED?logo=docker)](https://github.com/cubebecu/caption-engine/pkgs/container/caption-engine)
 [![GPU](https://img.shields.io/badge/GPU-NVIDIA%204GB%2B-brightgreen?logo=nvidia)](https://developer.nvidia.com/cuda-gpus)
 ![Built offline](https://img.shields.io/badge/built_with-offline_LLM-blueviolet)
@@ -78,4 +77,22 @@ Full technical reference — API endpoints, configuration, GPU requirements, bui
 
 ## License
 
-Licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
+This project has **two distinct licensing scopes**:
+
+### Code — Apache License 2.0
+The application code in this repository is licensed under Apache 2.0.
+See [LICENSE](LICENSE) for full text.
+
+### Model weights — Google Gemma Terms of Use
+The Docker image bundles **Gemma-3-4B** model weights, which are **NOT**
+under Apache 2.0. Gemma is governed by Google's [Gemma Terms of Use](gemma/TERMS_OF_USE.md)
+and [Prohibited Use Policy](gemma/PROHIBITED_USE_POLICY.md).
+
+By pulling the Docker image or using the bundled model in any form, you
+agree to those terms. The Prohibited Use Policy contains binding
+restrictions on what Gemma may be used for — read it before deploying
+this in production.
+
+### Third-party components
+See [NOTICE](NOTICE) and [third_party/](third_party/) for full
+attribution and license texts of bundled dependencies.
