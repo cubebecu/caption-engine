@@ -2,6 +2,7 @@ services:
   caption-engine:
     image: ghcr.io/cubebecu/caption-engine:latest
     container_name: caption-engine
+    runtime: nvidia
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -17,7 +18,6 @@ services:
       - JOBS_DIR=/app/jobs
       - LOG_FILE=/app/logs/server.log
     volumes:
-      - model-data:/app/models
       - job-data:/app/jobs
     deploy:
       resources:
@@ -28,5 +28,4 @@ services:
               capabilities: [gpu]
 
 volumes:
-  model-data:
   job-data:
