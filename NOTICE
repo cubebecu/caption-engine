@@ -1,0 +1,36 @@
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   Copyright 2025-2026 cubebecu
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+==========================================================================
+
+This product includes or uses the following third-party software:
+
+- fastapi (https://fastapi.tiangolo.com) — MIT License
+- uvicorn (https://www.uvicorn.org) — BSD License
+- python-multipart (https://github.com/expectless/python-multipart) — Apache 2.0
+- Pillow (https://python-pillow.org) — HPND License
+- pydantic (https://docs.pydantic.dev) — MIT License
+- aiofiles (https://github.com/Tinche/aiofiles) — Apache 2.0
+- aiohttp (https://docs.aiohttp.org) — Apache 2.0
+
+This product uses the Gemma-3-4B model by Google, subject to the
+Gemma Terms of Use (https://ai.google.dev/gemma/terms).
+By using this software you agree to those terms.
+llama.cpp (https://github.com/ggerganov/llama.cpp) — MIT License.
