@@ -17,6 +17,8 @@ services:
       - BATCH_SIZE=512
       - JOBS_DIR=/app/jobs
       - LOG_FILE=/app/logs/server.log
+      - BATCH_MAX_IMAGES=100
+      - BATCH_MAX_IMAGE_SIZE_MB=8
     volumes:
       - job-data:/app/jobs
     deploy:

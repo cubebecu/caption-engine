@@ -74,6 +74,10 @@ MAX_IMAGE_SIZE_MB = int(os.getenv("MAX_IMAGE_SIZE_MB", "16"))
 ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".bmp"}
 MAX_IMAGE_DIMENSION = int(os.getenv("MAX_IMAGE_DIMENSION", "16384"))  # prevent zip bombs
 
+# ── Batch processing ──
+BATCH_MAX_IMAGES = int(os.getenv("BATCH_MAX_IMAGES", "100"))
+BATCH_MAX_IMAGE_SIZE_MB = int(os.getenv("BATCH_MAX_IMAGE_SIZE_MB", "8"))
+
 # ── Thumbnail ──
 THUMBNAIL_MAX_SIZE = (320, 240)
 
@@ -697,34 +701,22 @@ async def web_ui():
     return HTMLResponse(content=WEB_UI_HTML)
 
 
-@app.post("/caption", response_model=CaptionResponse)
-async def caption(
-    image: UploadFile = File(...),
-    system_prompt: Optional[str] = Form(None),
-):
-    """Generate a caption from an image."""
-    prompt = system_prompt or SYSTEM_PROMPT
+async def _process_single_image(image_bytes: bytes, filename: str, prompt: str) -> CaptionResponse:
+    """Process a single image through llama-server and save a job.
 
-    # ── Health gate: reject if llama-server is down ──
-    if not _llama_healthy:
-        raise HTTPException(
-            status_code=503,
-            detail="Vision model is unavailable (restarting). Retry in a few seconds.",
-        )
-
-    content = await image.read()
-    if not content:
-        logger.warning("Empty image received from %s", image.filename)
+    Returns CaptionResponse on success.
+    Raises HTTPException on validation or inference failure.
+    """
+    if not image_bytes:
         raise HTTPException(status_code=400, detail="Empty image file")
 
-    # ── Image validation ──
-    _validate_image(content, image.filename)
+    _validate_image(image_bytes, filename)
 
-    img = Image.open(io.BytesIO(content))
+    img = Image.open(io.BytesIO(image_bytes))
     img_size = {"width": img.width, "height": img.height}
-    logger.info("Processing image: %s (%dx%d, %d bytes)", image.filename, img_size["width"], img_size["height"], len(content))
+    logger.info("Processing image: %s (%dx%d, %d bytes)", filename, img_size["width"], img_size["height"], len(image_bytes))
 
-    b64 = await _image_to_base64(content)
+    b64 = await _image_to_base64(image_bytes)
 
     start = time.time()
 
@@ -775,12 +767,12 @@ async def caption(
 
     # Save job
     job_id = _save_job(
-        image_bytes=content,
+        image_bytes=image_bytes,
         caption_text=caption_text,
         model_name=model_name,
         processing_time_ms=round(elapsed_ms, 1),
         img_size=img_size,
-        filename=image.filename or "image.png",
+        filename=filename or "image.png",
     )
 
     return CaptionResponse(
@@ -789,6 +781,69 @@ async def caption(
         processing_time_ms=round(elapsed_ms, 1),
         image_size=img_size,
         job_id=job_id,
+    )
+
+
+@app.post("/caption", response_model=CaptionResponse)
+async def caption(
+    image: UploadFile = File(...),
+    system_prompt: Optional[str] = Form(None),
+):
+    """Generate a caption from an image."""
+    prompt = system_prompt or SYSTEM_PROMPT
+
+    # ── Health gate: reject if llama-server is down ──
+    if not _llama_healthy:
+        raise HTTPException(
+            status_code=503,
+            detail="Vision model is unavailable (restarting). Retry in a few seconds.",
+        )
+
+    content = await image.read()
+    return await _process_single_image(content, image.filename, prompt)
+
+
+@app.post("/caption/batch")
+async def caption_batch(
+    images: list[UploadFile] = File(...),
+    system_prompt: Optional[str] = Form(None),
+):
+    """Process multiple images sequentially, streaming results via SSE."""
+    prompt = system_prompt or SYSTEM_PROMPT
+
+    if not _llama_healthy:
+        raise HTTPException(
+            status_code=503,
+            detail="Vision model is unavailable (restarting). Retry in a few seconds.",
+        )
+
+    if len(images) > BATCH_MAX_IMAGES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Too many images: {len(images)}. Maximum: {BATCH_MAX_IMAGES}",
+        )
+
+    async def event_generator():
+        processed = 0
+        failed = 0
+        for idx, image in enumerate(images):
+            filename = image.filename or f"image_{idx}.png"
+            try:
+                yield f"event: progress\ndata: {json.dumps({'current': idx + 1, 'total': len(images), 'filename': filename})}\n\n"
+                content = await image.read()
+                resp = await _process_single_image(content, filename, prompt)
+                yield f"event: result\ndata: {json.dumps(resp.model_dump())}\n\n"
+                processed += 1
+            except Exception as e:
+                logger.error("Batch image %d (%s) failed: %s", idx + 1, filename, str(e))
+                failed += 1
+                yield f"event: error\ndata: {json.dumps({'filename': filename, 'detail': str(e)})}\n\n"
+        yield f"event: done\ndata: {json.dumps({'processed': processed, 'failed': failed})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 
@@ -1479,6 +1534,25 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
     animation: spin 0.6s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  /* Batch queue */
+  .batch-queue { display: none; flex-direction: column; gap: 8px; }
+  .batch-queue.visible { display: flex; }
+  .batch-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+  .batch-count { font-size: 13px; font-weight: 600; color: var(--text); }
+  .batch-count .ok { color: var(--green); }
+  .batch-count .skip { color: var(--red); }
+  .batch-list { max-height: 240px; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+  .batch-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--surface2); border-radius: 6px; font-size: 12px; }
+  .batch-item .status { font-size: 14px; flex-shrink: 0; width: 20px; text-align: center; }
+  .batch-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+  .batch-item .size { color: var(--text-dim); flex-shrink: 0; }
+  .batch-item.skipped { opacity: 0.5; }
+  .batch-item.processing { background: var(--accent-dim); }
+  .batch-item.done { border-left: 3px solid var(--green); }
+  .batch-item.error { border-left: 3px solid var(--red); }
+  .batch-progress { height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+  .batch-progress-bar { height: 100%; background: var(--accent); transition: width 0.3s; width: 0%; }
+  .batch-status { font-size: 12px; color: var(--text-dim); text-align: center; padding: 4px 0; }
   @media (max-width: 900px) {
     .input-layout { grid-template-columns: 1fr; }
     .job-card { flex-direction: column; }
@@ -1519,10 +1593,25 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
               <div class="dropzone-title">Drop image here</div>
               <div class="dropzone-sub">or <strong>click to browse</strong></div>
             </div>
-            <input type="file" id="file-input" accept="image/png,image/jpeg,image/gif,image/bmp" style="display:none">
+            <input type="file" id="file-input" accept="image/png,image/jpeg,image/gif,image/bmp" multiple style="display:none">
+            <input type="file" id="folder-input" webkitdirectory multiple style="display:none">
             <div class="paste-box">💡 Paste with <kbd>Ctrl</kbd>+<kbd>V</kbd></div>
             <div class="btn-row">
-              <button class="file-select-btn" id="file-select-btn">📂 Select from disk</button>
+              <button class="file-select-btn" id="file-select-btn">📂 Select files</button>
+              <button class="file-select-btn" id="folder-select-btn">📁 Select folder</button>
+            </div>
+            <!-- Batch queue panel -->
+            <div class="batch-queue" id="batch-queue">
+              <div class="batch-header">
+                <div class="batch-count" id="batch-count"></div>
+                <div class="btn-row" style="margin-top:0;">
+                  <button class="btn btn-primary btn-sm" id="batch-process-btn" disabled>🚀 Process All</button>
+                  <button class="btn btn-ghost btn-sm" id="batch-clear-btn">✕ Clear</button>
+                </div>
+              </div>
+              <div class="batch-progress"><div class="batch-progress-bar" id="batch-progress-bar"></div></div>
+              <div class="batch-status" id="batch-status"></div>
+              <div class="batch-list" id="batch-list"></div>
             </div>
             <div class="preview-wrap" id="preview-container">
               <div class="preview-img-wrap">
@@ -1544,7 +1633,7 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
         <div class="card">
           <div class="card-body" style="font-size:13px;color:var(--text-dim);line-height:1.6;">
             <div style="font-weight:600;color:var(--text-bright);margin-bottom:6px;">Image caption generator for technical documentation</div>
-            <div>PNG, JPEG, GIF, BMP · One image per request</div>
+            <div>PNG, JPEG, GIF, BMP · Single image or batch (up to 100)</div>
           </div>
         </div>
       </div>
@@ -1659,10 +1748,13 @@ let currentImage = null;
 let currentImageName = '';
 let lastCaption = '';
 let jobs = {};
+let batchFiles = [];
+let batchAbort = null;
 
 // DOM refs
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('file-input');
+const folderInput = document.getElementById('folder-input');
 const previewContainer = document.getElementById('preview-container');
 const previewImage = document.getElementById('preview-image');
 const previewFilename = document.getElementById('preview-filename');
@@ -1682,7 +1774,16 @@ const resultsCount = document.getElementById('results-count');
 const logsOutput = document.getElementById('logs-output');
 const logsTotal = document.getElementById('logs-total');
 const logsCount = document.getElementById('logs-count');
+const batchQueue = document.getElementById('batch-queue');
+const batchCount = document.getElementById('batch-count');
+const batchProgressBar = document.getElementById('batch-progress-bar');
+const batchStatus = document.getElementById('batch-status');
+const batchList = document.getElementById('batch-list');
+const batchProcessBtn = document.getElementById('batch-process-btn');
 let lastLogsLines = [];
+
+const ALLOWED_EXTS = {'.png': true, '.jpg': true, '.jpeg': true, '.gif': true, '.bmp': true};
+const BATCH_MAX_SIZE = 8 * 1024 * 1024;
 
 // Tabs
 document.querySelectorAll('.tab').forEach(tab => {
@@ -1700,7 +1801,11 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 // File select
 document.getElementById('file-select-btn').addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFiles(fileInput.files); });
+
+// Folder select
+document.getElementById('folder-select-btn').addEventListener('click', () => folderInput.click());
+folderInput.addEventListener('change', () => { if (folderInput.files.length) handleFiles(folderInput.files); });
 
 // Drop zone
 dropzone.addEventListener('click', () => fileInput.click());
@@ -1709,17 +1814,43 @@ dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = ''; 
 dropzone.addEventListener('drop', e => {
   e.preventDefault();
   dropzone.style.borderColor = ''; dropzone.style.background = '';
-  const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith('image/')) handleFile(file);
+  const files = e.dataTransfer.files;
+  if (files.length) handleFiles(files);
 });
 
 // Paste
 document.addEventListener('paste', e => {
   const items = e.clipboardData.items;
   for (const item of items) {
-    if (item.type.startsWith('image/')) { handleFile(item.getAsFile()); break; }
+    if (item.type.startsWith('image/')) { handleFiles([item.getAsFile()]); break; }
   }
 });
+
+function isSupportedImage(file) {
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  return ALLOWED_EXTS[ext] && file.size <= BATCH_MAX_SIZE;
+}
+
+function getBaseName(fullPath) {
+  return fullPath.replace(/^.*[\\/]/, '');
+}
+
+function handleFiles(fileList) {
+  const files = Array.from(fileList).map(f => ({
+    file: f,
+    name: getBaseName(f.name),
+    size: f.size,
+    supported: isSupportedImage(f),
+  }));
+
+  if (files.length === 1 && files[0].supported) {
+    handleFile(files[0].file);
+    return;
+  }
+
+  batchFiles = files;
+  showBatchQueue();
+}
 
 function handleFile(file) {
   currentImage = file;
@@ -1741,10 +1872,169 @@ function handleFile(file) {
   reader.readAsDataURL(file);
 }
 
+function showBatchQueue() {
+  const ok = batchFiles.filter(f => f.supported).length;
+  const skip = batchFiles.length - ok;
+  batchCount.innerHTML = `<span class="ok">${ok} supported</span>${skip ? ' <span class="skip">(' + skip + ' skipped)</span>' : ''}`;
+  batchProgressBar.style.width = '0%';
+  batchStatus.textContent = '';
+  batchList.innerHTML = '';
+  batchProcessBtn.disabled = false;
+  batchProcessBtn.textContent = '🚀 Process All';
+
+  batchFiles.forEach((f, i) => {
+    const item = document.createElement('div');
+    item.className = 'batch-item' + (f.supported ? '' : ' skipped');
+    item.id = 'batch-item-' + i;
+    item.innerHTML = `
+      <span class="status">${f.supported ? '⏳' : '✗'}</span>
+      <span class="name" title="${f.name}">${f.name}</span>
+      <span class="size">${formatBytes(f.size)}</span>
+    `;
+    batchList.appendChild(item);
+  });
+
+  dropzone.style.display = 'none';
+  document.querySelector('.paste-box').style.display = 'none';
+  document.getElementById('file-select-btn').parentElement.style.display = 'none';
+  previewContainer.classList.remove('visible');
+  batchQueue.classList.add('visible');
+}
+
+document.getElementById('batch-clear-btn').addEventListener('click', clearBatch);
+
+function clearBatch() {
+  batchFiles = [];
+  batchQueue.classList.remove('visible');
+  dropzone.style.display = '';
+  document.querySelector('.paste-box').style.display = '';
+  document.getElementById('file-select-btn').parentElement.style.display = '';
+  fileInput.value = '';
+  folderInput.value = '';
+}
+
+// Batch processing with SSE
+batchProcessBtn.addEventListener('click', async () => {
+  const systemPrompt = document.getElementById('config-system-prompt').value;
+  const formData = new FormData();
+  const supported = batchFiles.filter(f => f.supported);
+  supported.forEach(f => formData.append('images', f.file));
+
+  if (!supported.length) {
+    showToast('No supported images', 'error');
+    return;
+  }
+
+  batchProcessBtn.disabled = true;
+  batchAbort = new AbortController();
+
+  try {
+    const resp = await fetch('/caption/batch', {
+      method: 'POST',
+      body: formData,
+      signal: batchAbort.signal,
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+      throw new Error(err.detail || 'Batch failed');
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      let eventType = '';
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          eventType = line.slice(7);
+          continue;
+        }
+        if (line.startsWith('data: ')) {
+          const data = JSON.parse(line.slice(6));
+          handleBatchEvent(eventType, data);
+        }
+      }
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      batchStatus.textContent = 'Cancelled';
+      showToast('Batch cancelled', 'error');
+    } else {
+      batchStatus.textContent = 'Error: ' + err.message;
+      showToast('Batch failed: ' + err.message, 'error');
+    }
+  } finally {
+    batchAbort = null;
+    batchProcessBtn.disabled = false;
+    batchProcessBtn.textContent = '🚀 Process All';
+  }
+});
+
+function handleBatchEvent(type, data) {
+  if (type === 'progress') {
+    const pct = Math.round((data.current / data.total) * 100);
+    batchProgressBar.style.width = pct + '%';
+    batchStatus.textContent = `Processing ${data.current}/${data.total} — ${data.filename}`;
+    const prevItem = document.getElementById('batch-item-' + (data.current - 2));
+    if (prevItem) {
+      prevItem.querySelector('.status').textContent = '✓';
+      prevItem.classList.add('done');
+    }
+    const curItem = document.getElementById('batch-item-' + (data.current - 1));
+    if (curItem) {
+      curItem.querySelector('.status').textContent = '⏳';
+      curItem.classList.add('processing');
+    }
+  } else if (type === 'result') {
+    lastCaption = data.caption;
+    outputArea.textContent = data.caption;
+    outputArea.classList.remove('placeholder');
+    outputMeta.style.display = 'flex';
+    copyBtn.disabled = false;
+    saveBtn.disabled = false;
+    document.getElementById('meta-model').textContent = '🤖 ' + data.model;
+    document.getElementById('meta-time').textContent = '⏱ ' + data.processing_time_ms.toFixed(0) + 'ms';
+    document.getElementById('meta-dims').textContent = '📐 ' + data.image_size.width + '×' + data.image_size.height;
+  } else if (type === 'error') {
+    const idx = batchFiles.findIndex(f => f.name === data.filename);
+    if (idx >= 0) {
+      const item = document.getElementById('batch-item-' + idx);
+      if (item) {
+        item.querySelector('.status').textContent = '✗';
+        item.classList.add('error');
+      }
+    }
+  } else if (type === 'done') {
+    batchStatus.textContent = `Done — ${data.processed} processed, ${data.failed} failed`;
+    batchProgressBar.style.width = '100%';
+    showToast(`Batch complete: ${data.processed} processed, ${data.failed} failed`, data.failed ? 'error' : 'success');
+    loadJobs();
+  }
+}
+
+// Cancel batch
+document.getElementById('batch-clear-btn').addEventListener('click', () => {
+  if (batchAbort) {
+    batchAbort.abort();
+  } else {
+    clearBatch();
+  }
+});
+
 document.getElementById('clear-btn').addEventListener('click', () => {
   currentImage = null;
   currentImageName = '';
   fileInput.value = '';
+  folderInput.value = '';
   dropzone.style.display = '';
   document.querySelector('.paste-box').style.display = '';
   document.getElementById('file-select-btn').parentElement.style.display = '';
@@ -1756,6 +2046,7 @@ document.getElementById('clear-btn').addEventListener('click', () => {
   copyBtn.disabled = true;
   saveBtn.disabled = true;
   lastCaption = '';
+  clearBatch();
 });
 
 // Caption
@@ -2006,4 +2297,4 @@ if __name__ == "__main__":
     file_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
     logger.addHandler(file_handler)
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("FASTAPI_PORT", "8000")))
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("FASTAPI_PORT", "8000")), timeout_keep_alive=0)

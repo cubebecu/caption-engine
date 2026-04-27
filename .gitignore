@@ -2,7 +2,7 @@
 .env
 
 # Old files (archived)
-old/
+tools/
 
 # Model files (large binaries)
 models/
@@ -20,7 +20,6 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-.venv/
 
 # IDE
 .vscode/
@@ -43,3 +42,6 @@ Dockerfile
 
 # Project memory
 .qwen/
+
+# Audit notes
+audyt.md

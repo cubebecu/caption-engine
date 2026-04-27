@@ -18,8 +18,10 @@ graph LR
 Four tabs:
 
 **Caption tab:**
-- Drag & drop image, click to browse, or paste with `Ctrl+V`
-- Click "Generate Caption"
+- Drag & drop image(s), click to browse, select folder, or paste with `Ctrl+V`
+- Single image: preview + "Generate Caption" button
+- Multiple images: batch queue panel with progress bar, per-file status
+- Click "Process All" for batch (SSE streaming, sequential processing)
 - Output shown with model, timing, dimensions
 - Copy to clipboard or save as `.md` file
 
@@ -59,6 +61,7 @@ Four tabs:
 |-----------------------|----------|------------------------------------|
 | `/`                   | GET      | Web UI                           |
 | `/caption`            | POST     | Generate caption from image        |
+| `/caption/batch`      | POST     | Batch process images (SSE stream)  |
 | `/health`             | GET      | Health check                       |
 | `/health/model`       | GET      | Vision model reachability          |
 | `/config`             | GET      | Current configuration              |
@@ -94,6 +97,25 @@ multipart/form-data:
 }
 ```
 
+### `/caption/batch` request
+
+```
+multipart/form-data:
+  images        — up to 100 image files (PNG/JPEG/GIF/BMP, max 8MB each)
+  system_prompt — optional override for system prompt
+```
+
+Response is an SSE (`text/event-stream`) stream. Events:
+
+| Event      | Payload | Description |
+|------------|---------|-------------|
+| `progress` | `{current, total, filename}` | Processing progress |
+| `result`   | same as `/caption` response | Per-image caption result |
+| `error`    | `{filename, detail}` | Per-image error |
+| `done`     | `{processed, failed}` | Batch complete |
+
+Processing is sequential. If llama-server crashes mid-batch, remaining images are skipped with `error` events.
+
 ### `/config` PUT request
 
 ```json
@@ -125,6 +147,10 @@ SYSTEM_PROMPT=You are a technical documentation analyst...
 # Image validation
 MAX_IMAGE_SIZE_MB=16
 MAX_IMAGE_DIMENSION=16384
+
+# Batch processing
+BATCH_MAX_IMAGES=100
+BATCH_MAX_IMAGE_SIZE_MB=8
 
 # Llama-server health monitor
 LLAMA_HEALTH_INTERVAL=15
