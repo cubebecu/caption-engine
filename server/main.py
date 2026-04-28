@@ -1137,6 +1137,7 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Image caption creator</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
   :root {
     --bg: #0a0c10;
     --surface: #131620;
@@ -1147,9 +1148,9 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
     --text: #d8dbe6;
     --text-dim: #6b7194;
     --text-bright: #f0f2fa;
-    --accent: #6c8cff;
-    --accent-dim: rgba(108,140,255,0.12);
-    --accent-glow: rgba(108,140,255,0.25);
+    --accent: #f59e0b;
+    --accent-dim: rgba(245,158,11,0.12);
+    --accent-glow: rgba(245,158,11,0.25);
     --green: #34d399;
     --green-dim: rgba(52,211,153,0.15);
     --red: #f87171;
@@ -1158,8 +1159,13 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
     --radius-sm: 8px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  ::selection { background: rgba(245,158,11,0.3); }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
@@ -1191,8 +1197,8 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
   }
+  .logo-icon svg { width: 16px; height: 16px; stroke: #000; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .logo span { color: var(--accent); }
   .status-badge {
     display: flex;
@@ -1214,13 +1220,14 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
   .status-dot.error { background: var(--red); box-shadow: 0 0 6px var(--red); }
   .tab-bar {
     display: flex;
-    gap: 0;
+    justify-content: space-between;
     padding: 0 28px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
   }
+  .tab-group { display: flex; gap: 0; }
   .tab {
-    padding: 14px 22px;
+    padding: 14px 20px;
     font-size: 13px;
     font-weight: 600;
     color: var(--text-dim);
@@ -1228,12 +1235,17 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
     border-bottom: 2px solid transparent;
     transition: all 0.15s;
     user-select: none;
-    display: flex;
-    align-items: center;
-    gap: 7px;
   }
   .tab:hover { color: var(--text); }
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-secondary {
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0.6;
+    padding: 14px 16px;
+  }
+  .tab-secondary:hover { opacity: 1; }
+  .tab-secondary.active { color: var(--accent); opacity: 1; }
   .tab-badge {
     background: var(--surface3);
     color: var(--text-dim);
@@ -1252,7 +1264,7 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
     display: flex;
     flex-direction: column;
   }
-  .card:hover { border-color: var(--border-hover); }
+
   .card-head {
     padding: 14px 18px;
     font-size: 12px;
@@ -1286,9 +1298,9 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
     gap: 12px;
     min-height: 280px;
     justify-content: center;
+    background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='1' fill='%23ffffff0a'/%3E%3Ccircle cx='13' cy='1' r='1' fill='%23ffffff0a'/%3E%3Ccircle cx='1' cy='13' r='1' fill='%23ffffff0a'/%3E%3Ccircle cx='13' cy='13' r='1' fill='%23ffffff0a'/%3E%3C/svg%3E");
   }
-  .dropzone:hover { border-color: var(--accent); background: var(--accent-dim); }
-  .dropzone-icon { font-size: 48px; opacity: 0.4; }
+  .dropzone:hover { border-color: var(--accent); background-color: var(--accent-dim); box-shadow: inset 0 0 32px rgba(245,158,11,0.06); }
   .dropzone-title { font-size: 14px; font-weight: 600; color: var(--text); }
   .dropzone-sub { font-size: 13px; color: var(--text-dim); }
   .dropzone-sub strong { color: var(--accent); }
@@ -1365,15 +1377,15 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
     gap: 7px;
     font-family: inherit;
   }
-  .btn-primary { background: var(--accent); color: #fff; }
-  .btn-primary:hover { background: #5a7af0; }
+  .btn-primary { background: var(--accent); color: #000; font-weight: 600; }
+  .btn-primary:hover { box-shadow: 0 0 16px rgba(245,158,11,0.3); }
   .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-ghost {
     background: transparent;
     color: var(--text-dim);
     border: 1px solid var(--border);
   }
-  .btn-ghost:hover { border-color: var(--text-dim); color: var(--text); }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
   .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
   .btn-danger-sm {
     padding: 4px 8px;
@@ -1398,6 +1410,8 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
     min-height: 150px;
     flex: 1;
     overflow: auto;
+    border-left: 2px solid var(--accent);
+    padding-left: 16px;
   }
   .output-placeholder { color: var(--text-dim); font-style: italic; }
   .output-actions {
@@ -1429,7 +1443,6 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
     padding: 60px 20px;
     color: var(--text-dim);
   }
-  .results-empty-icon { font-size: 48px; opacity: 0.3; margin-bottom: 12px; }
   .results-empty-text { font-size: 15px; font-weight: 600; margin-bottom: 4px; color: var(--text); }
   .results-empty-sub { font-size: 13px; }
   .job-list { display: flex; flex-direction: column; gap: 12px; }
@@ -1532,7 +1545,7 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
     padding: 14px;
     color: var(--text);
     font-size: 13px;
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-family: 'Geist Mono', monospace;
     line-height: 1.65;
     resize: vertical;
     min-height: 360px;
@@ -1633,7 +1646,7 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
 <body>
 <div class="topbar">
   <div class="logo">
-    <div class="logo-icon">🔍</div>
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3z"/><polyline points="14 3 14 8 21 8"/></svg></div>
     <span>Image caption creator</span>
   </div>
   <div>
@@ -1644,10 +1657,14 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
   </div>
 </div>
 <div class="tab-bar">
-  <div class="tab active" data-tab="caption"><span class="tab-icon">📷</span> Caption</div>
-  <div class="tab" data-tab="results"><span class="tab-icon">📋</span> Results <span class="tab-badge" id="results-count">0</span></div>
-  <div class="tab" data-tab="logs"><span class="tab-icon">📜</span> Logs <span class="tab-badge" id="logs-count">0</span></div>
-  <div class="tab" data-tab="config"><span class="tab-icon">⚙️</span> Configuration</div>
+  <div class="tab-group">
+    <div class="tab active" data-tab="caption">Caption</div>
+    <div class="tab" data-tab="results">Results <span class="tab-badge" id="results-count">0</span></div>
+  </div>
+  <div class="tab-group">
+    <div class="tab tab-secondary" data-tab="logs">Logs <span class="tab-badge" id="logs-count">0</span></div>
+    <div class="tab tab-secondary" data-tab="config">Configuration</div>
+  </div>
 </div>
 <div class="page" style="padding:0;flex:1;overflow:hidden;">
   <!-- Caption Tab -->
@@ -1656,27 +1673,26 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
       <!-- Left: Input -->
       <div style="display:flex;flex-direction:column;gap:16px;">
         <div class="card">
-          <div class="card-head">📁 Image Input</div>
+          <div class="card-head">Image Input</div>
           <div class="card-body">
             <div class="dropzone" id="dropzone">
-              <div class="dropzone-icon">🖼️</div>
               <div class="dropzone-title">Drop image here</div>
               <div class="dropzone-sub">or <strong>click to browse</strong></div>
             </div>
             <input type="file" id="file-input" accept="image/png,image/jpeg,image/gif,image/bmp" multiple style="display:none">
             <input type="file" id="folder-input" webkitdirectory multiple style="display:none">
-            <div class="paste-box">💡 Paste with <kbd>Ctrl</kbd>+<kbd>V</kbd></div>
+            <div class="paste-box">Paste with <kbd>Ctrl</kbd>+<kbd>V</kbd></div>
             <div class="btn-row">
-              <button class="file-select-btn" id="file-select-btn">📂 Select files</button>
-              <button class="file-select-btn" id="folder-select-btn">📁 Select folder</button>
+              <button class="file-select-btn" id="file-select-btn">Select files</button>
+              <button class="file-select-btn" id="folder-select-btn">Select folder</button>
             </div>
             <!-- Batch queue panel -->
             <div class="batch-queue" id="batch-queue">
               <div class="batch-header">
                 <div class="batch-count" id="batch-count"></div>
                 <div class="btn-row" style="margin-top:0;">
-                  <button class="btn btn-primary btn-sm" id="batch-process-btn" disabled>🚀 Process All</button>
-                  <button class="btn btn-ghost btn-sm" id="batch-clear-btn">✕ Clear</button>
+                  <button class="btn btn-primary btn-sm" id="batch-process-btn" disabled>Process All</button>
+                  <button class="btn btn-ghost btn-sm" id="batch-clear-btn">Clear</button>
                 </div>
               </div>
               <div class="batch-progress"><div class="batch-progress-bar" id="batch-progress-bar"></div></div>
@@ -1693,17 +1709,10 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
                 <span id="preview-dims"></span>
               </div>
               <div class="btn-row">
-                <button class="btn btn-primary" id="caption-btn" disabled>🚀 Generate Caption</button>
-                <button class="btn btn-ghost" id="clear-btn">✕ Clear</button>
+                <button class="btn btn-primary" id="caption-btn" disabled>Generate Caption</button>
+                <button class="btn btn-ghost" id="clear-btn">Clear</button>
               </div>
             </div>
-          </div>
-        </div>
-        <!-- Info card -->
-        <div class="card">
-          <div class="card-body" style="font-size:13px;color:var(--text-dim);line-height:1.6;">
-            <div style="font-weight:600;color:var(--text-bright);margin-bottom:6px;">Image caption generator for technical documentation</div>
-            <div>PNG, JPEG, GIF, BMP · Single image or batch (up to 100)</div>
           </div>
         </div>
       </div>
@@ -1711,14 +1720,14 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
       <div style="display:flex;flex-direction:column;gap:16px;">
         <div class="card" style="flex:1;min-height:0;">
           <div class="card-head">
-            📝 Output
+            Output
             <span style="margin-left:auto;font-size:11px;text-transform:none;letter-spacing:0;font-weight:500;color:var(--accent)">Markdown</span>
           </div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:0;">
             <div class="output placeholder" id="output-area">Caption will appear here...</div>
             <div class="output-actions">
-              <button class="btn btn-primary" id="copy-btn" style="flex:1;justify-content:center;" disabled>📋 Copy</button>
-              <button class="btn btn-ghost" id="save-btn" style="flex:1;justify-content:center;" disabled>💾 Save .md</button>
+              <button class="btn btn-primary" id="copy-btn" style="flex:1;justify-content:center;" disabled>Copy</button>
+              <button class="btn btn-ghost" id="save-btn" style="flex:1;justify-content:center;" disabled>Save .md</button>
             </div>
             <div class="output-tags" id="output-meta" style="display:none">
               <div class="output-tag" id="meta-model"></div>
@@ -1735,7 +1744,6 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
     <div class="results-page">
       <div class="job-list" id="job-list"></div>
       <div class="results-empty" id="results-empty">
-        <div class="results-empty-icon">📭</div>
         <div class="results-empty-text">No results yet</div>
         <div class="results-empty-sub">Generate a caption to see results here</div>
       </div>
@@ -1747,12 +1755,12 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
       <div style="font-size:14px;font-weight:600;color:var(--text-bright);">Application Logs</div>
       <div style="display:flex;gap:8px;align-items:center;">
         <span style="font-size:12px;color:var(--text-dim);" id="logs-total">0 lines total</span>
-        <button class="btn btn-ghost btn-sm" id="logs-refresh-btn" onclick="loadLogs()">↻ Refresh</button>
-        <button class="btn btn-ghost btn-sm" id="logs-download-btn" onclick="downloadLogs()">💾 Download</button>
+        <button class="btn btn-ghost btn-sm" id="logs-refresh-btn" onclick="loadLogs()">Refresh</button>
+        <button class="btn btn-ghost btn-sm" id="logs-download-btn" onclick="downloadLogs()">Download</button>
       </div>
     </div>
     <div class="card" style="max-height:calc(100vh - 220px);overflow:auto;">
-      <pre id="logs-output" style="padding:16px;font-size:12px;line-height:1.6;color:var(--text);white-space:pre;overflow-x:auto;font-family:'JetBrains Mono','Fira Code',monospace;margin:0;max-height:calc(100vh - 220px);"></pre>
+      <pre id="logs-output" style="padding:16px;font-size:12px;line-height:1.6;color:var(--text);white-space:pre;overflow-x:auto;font-family:'Geist Mono',monospace;margin:0;max-height:calc(100vh - 220px);"></pre>
     </div>
   </div>
   <!-- Config Tab -->
@@ -1765,8 +1773,8 @@ WEB_UI_HTML = r"""<!DOCTYPE html>
         <div class="field-hint">This prompt is sent to the model as the system message for every caption request.</div>
       </div>
       <div class="btn-row" style="margin-top:20px;">
-        <button class="btn btn-primary" id="save-config-btn">💾 Save Configuration</button>
-        <button class="btn btn-ghost" id="reset-config-btn">↺ Reset to Defaults</button>
+        <button class="btn btn-primary" id="save-config-btn">Save Configuration</button>
+        <button class="btn btn-ghost" id="reset-config-btn">Reset to Defaults</button>
       </div>
       <div class="config-section-title" style="margin-top:32px;">Model &amp; Runtime Info</div>
       <div class="info-card" id="model-info">Loading...</div>
@@ -1854,6 +1862,12 @@ let lastLogsLines = [];
 
 const ALLOWED_EXTS = {'.png': true, '.jpg': true, '.jpeg': true, '.gif': true, '.bmp': true};
 const BATCH_MAX_SIZE = 8 * 1024 * 1024;
+
+// Monocolor icon SVGs (inline, stroke=currentColor)
+const iconCode = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>';
+const iconClock = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+const iconCalendar = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+const iconDims = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>';
 
 // Tabs
 document.querySelectorAll('.tab').forEach(tab => {
@@ -1950,7 +1964,7 @@ function showBatchQueue() {
   batchStatus.textContent = '';
   batchList.innerHTML = '';
   batchProcessBtn.disabled = false;
-  batchProcessBtn.textContent = '🚀 Process All';
+  batchProcessBtn.textContent = 'Process All';
 
   batchFiles.forEach((f, i) => {
     const item = document.createElement('div');
@@ -2045,7 +2059,7 @@ batchProcessBtn.addEventListener('click', async () => {
   } finally {
     batchAbort = null;
     batchProcessBtn.disabled = false;
-    batchProcessBtn.textContent = '🚀 Process All';
+    batchProcessBtn.textContent = 'Process All';
   }
 });
 
@@ -2071,9 +2085,9 @@ function handleBatchEvent(type, data) {
     outputMeta.style.display = 'flex';
     copyBtn.disabled = false;
     saveBtn.disabled = false;
-    document.getElementById('meta-model').textContent = '🤖 ' + data.model;
-    document.getElementById('meta-time').textContent = '⏱ ' + data.processing_time_ms.toFixed(0) + 'ms';
-    document.getElementById('meta-dims').textContent = '📐 ' + data.image_size.width + '×' + data.image_size.height;
+    document.getElementById('meta-model').innerHTML = iconCode + ' ' + data.model;
+    document.getElementById('meta-time').innerHTML = iconClock + ' ' + data.processing_time_ms.toFixed(0) + 'ms';
+    document.getElementById('meta-dims').innerHTML = iconDims + ' ' + data.image_size.width + '\u00d7' + data.image_size.height;
   } else if (type === 'error') {
     const idx = batchFiles.findIndex(f => f.name === data.filename);
     if (idx >= 0) {
@@ -2146,9 +2160,9 @@ captionBtn.addEventListener('click', async () => {
     outputMeta.style.display = 'flex';
     copyBtn.disabled = false;
     saveBtn.disabled = false;
-    document.getElementById('meta-model').textContent = '🤖 ' + data.model;
-    document.getElementById('meta-time').textContent = '⏱ ' + data.processing_time_ms.toFixed(0) + 'ms';
-    document.getElementById('meta-dims').textContent = '📐 ' + data.image_size.width + '×' + data.image_size.height;
+    document.getElementById('meta-model').innerHTML = iconCode + ' ' + data.model;
+    document.getElementById('meta-time').innerHTML = iconClock + ' ' + data.processing_time_ms.toFixed(0) + 'ms';
+    document.getElementById('meta-dims').innerHTML = iconDims + ' ' + data.image_size.width + '\u00d7' + data.image_size.height;
     showToast('Caption generated', 'success');
   } catch (err) {
     outputArea.textContent = 'Error: ' + err.message;
@@ -2156,7 +2170,7 @@ captionBtn.addEventListener('click', async () => {
     showToast('Failed: ' + err.message, 'error');
   } finally {
     captionBtn.disabled = false;
-    captionBtn.textContent = '🚀 Generate Caption';
+    captionBtn.textContent = 'Generate Caption';
   }
 });
 
@@ -2197,23 +2211,23 @@ async function loadJobs() {
         <div class="job-thumb">
           <img src="/jobs/${j.id}/thumbnail" alt="Job image">
           <div class="job-thumb-overlay">
-            <span>📐 ${j.image_size.width}×${j.image_size.height}</span>
+            <span>${iconDims} ${j.image_size.width}\u00d7${j.image_size.height}</span>
           </div>
         </div>
         <div class="job-body">
           <div class="job-header">
             <div class="job-name">${j.filename}</div>
             <div class="job-actions">
-              <button class="btn btn-ghost btn-sm" onclick="copyJob('${j.id}')">📋 Copy</button>
-              <button class="btn btn-ghost btn-sm" onclick="downloadJobMd('${j.id}')">💾 .md</button>
-              <button class="btn btn-ghost btn-sm" onclick="downloadJobImage('${j.id}')">🖼️ Image</button>
-              <button class="btn-danger-sm" onclick="deleteJob('${j.id}')">✕ Delete</button>
+              <button class="btn btn-ghost btn-sm" onclick="copyJob('${j.id}')">Copy</button>
+              <button class="btn btn-ghost btn-sm" onclick="downloadJobMd('${j.id}')">.md</button>
+              <button class="btn btn-ghost btn-sm" onclick="downloadJobImage('${j.id}')">Image</button>
+              <button class="btn-danger-sm" onclick="deleteJob('${j.id}')">Delete</button>
             </div>
           </div>
           <div class="job-meta">
-            <span>🤖 ${j.model}</span>
-            <span>⏱ ${j.processing_time_ms.toFixed(0)}ms</span>
-            <span>📅 ${j.created_at}</span>
+            <span>${iconCode} ${j.model}</span>
+            <span>${iconClock} ${j.processing_time_ms.toFixed(0)}ms</span>
+            <span>${iconCalendar} ${j.created_at}</span>
           </div>
           <div class="job-preview">${escapeHtml(j.caption)}</div>
         </div>`;
