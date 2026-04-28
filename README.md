@@ -1,5 +1,4 @@
 <div align="center">
-
 # caption-engine
 
 ### Image captioning for technical documentation
@@ -109,6 +108,14 @@ Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 | Backend | Anthropic Messages API + FastAPI |
 | Config | `LLM_BACKEND=anthropic`, `ANTHROPIC_API_KEY` required |
 
+---
+### Results
+
+## Batch processing  
+![Web UI](raw/res1.jpg)
+
+## Caption repository  
+![Web UI](raw/res2.jpg)
 ---
 
 ## Documentation
