@@ -124,11 +124,13 @@ Full technical reference — API endpoints, configuration, GPU requirements, bui
 Built by [cubebecu](https://github.com/cubebecu) as part of an evaluation of local agentic coding setups. The entire codebase was written using a local model running on a single NVIDIA GPU
 
 ## License
-> [!NOTE] Code — Apache License 2.0  
+> [!NOTE] 
+Code — Apache License 2.0  
 The application code in this repository is licensed under Apache 2.0.
 See [LICENSE](LICENSE) for full text.
 
-> [!NOTE] Model weights (Local mode only) — Google Gemma Terms of Use  
+> [!NOTE] 
+Model weights (Local mode only) — Google Gemma Terms of Use  
 The Docker image bundles **Gemma-3-4B** model weights, which are **NOT**
 under Apache 2.0. Gemma is governed by Google's [Gemma Terms of Use](gemma/TERMS_OF_USE.md)
 and [Prohibited Use Policy](gemma/PROHIBITED_USE_POLICY.md).
