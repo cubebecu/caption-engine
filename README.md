@@ -12,9 +12,7 @@ Built for on-device inference — with an API fallback for machines without a GP
 [![Lite Online](https://img.shields.io/badge/Lite-Online-D97757?logo=anthropic&logoColor=white)](https://www.anthropic.com/api)
 </div>
 
----
 ![Web UI](raw/demo-2.gif)
----
 
 ## Two Modes
 
@@ -26,7 +24,6 @@ Built for on-device inference — with an API fallback for machines without a GP
 | Image size | ~12 GB | ~600 MB |
 | Cost | Free after setup | Per-request Anthropic pricing |
 
----
 
 ## Quick Start — Lite (no GPU)
 
@@ -46,7 +43,6 @@ docker compose -f docker-compose-lite.yml up -d
 
 Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
----
 
 ## Quick Start — Local (GPU)
 
@@ -87,7 +83,6 @@ Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
 > Upload an image, click **Generate Caption**, get markdown output.
 
----
 
 ## Under the Hood
 
@@ -108,23 +103,19 @@ Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 | Backend | Anthropic Messages API + FastAPI |
 | Config | `LLM_BACKEND=anthropic`, `ANTHROPIC_API_KEY` required |
 
----
-### Results
+## Results
 
-## Batch processing  
+### Batch processing  
 ![Web UI](raw/res1.jpg)
 
-## Caption repository  
+### Caption repository  
 ![Web UI](raw/res2.jpg)
----
 
 ## Documentation
 
 Full technical reference — API endpoints, configuration, GPU requirements, building from source:
 
 [DOCS.md](DOCS.md)
-
----
 
 ## Author
 > [!NOTE]
