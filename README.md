@@ -7,6 +7,8 @@
 Upload a screenshot, diagram, or CLI output — get a structured markdown description.
 
 [![Docker Pulls](https://img.shields.io/badge/Docker-GHCR.io-2496ED?logo=docker)](https://github.com/cubebecu/caption-engine/pkgs/container/caption-engine)
+[![GPU](https://img.shields.io/badge/GPU-NVIDIA%204GB%2B-brightgreen?logo=nvidia)](https://developer.nvidia.com/cuda-gpus)
+![Built offline](https://img.shields.io/badge/built_with-offline_LLM-blueviolet)
 [![Lite](https://img.shields.io/badge/Lite-Anthropic%20API-f59e0b)](https://github.com/cubebecu/caption-engine/pkgs/container/caption-engine-lite)
 
 </div>
