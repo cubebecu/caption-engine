@@ -44,7 +44,7 @@ class AnthropicBackend:
 
         # Single shared client for all requests — creating per-request hangs in this env
         self._http = httpx.AsyncClient(
-            timeout=httpx.Timeout(connect=10.0, read=300.0, write=60.0, pool=5.0),
+            timeout=httpx.Timeout(connect=10.0, read=600.0, write=60.0, pool=5.0),
             limits=httpx.Limits(max_connections=2, max_keepalive_connections=1, keepalive_expiry=10),
         )
 
