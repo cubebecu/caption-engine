@@ -7,17 +7,16 @@
 Upload a screenshot, diagram, or CLI output — get a structured markdown description.
 
 [![Docker Pulls](https://img.shields.io/badge/Docker-GHCR.io-2496ED?logo=docker)](https://github.com/cubebecu/caption-engine/pkgs/container/caption-engine)
-[![GPU](https://img.shields.io/badge/GPU-NVIDIA%204GB%2B-brightgreen?logo=nvidia)](https://developer.nvidia.com/cuda-gpus)
-![Built offline](https://img.shields.io/badge/built_with-offline_LLM-blueviolet)
-[![Lite](https://img.shields.io/badge/Lite-Anthropic%20API-f59e0b)](https://github.com/cubebecu/caption-engine/pkgs/container/caption-engine-lite)
-
+![Built offline with Qwen](https://img.shields.io/badge/Built%20offline%20with-Qwen-615CED)
+[![Full GPU](https://img.shields.io/badge/Full-GPU-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-gpus)
+[![Lite Online](https://img.shields.io/badge/Lite-Online-D97757?logo=anthropic&logoColor=white)](https://www.anthropic.com/api)
 </div>
 
 ---
 
 ## Two Modes
 
-| | **Local** | **Lite** |
+| | **Full (Local)** | **Lite (online)** |
 |--|-----------|----------|
 | Model | Gemma-3-4B (on-device) | Claude Sonnet (Anthropic API) |
 | GPU | NVIDIA 4GB+ VRAM required | None — runs on any machine |
