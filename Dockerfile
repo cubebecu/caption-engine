@@ -20,13 +20,13 @@ RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 # Copy application code
 COPY server/ ./server/
 COPY system_prompt_default.md .
-COPY tools/llama.cpp/build/bin/llama-server .
+COPY llama-server .
 RUN chmod +x llama-server
 
 # Copy shared libraries (llama.cpp) — must be in /app for LD_LIBRARY_PATH
-COPY tools/llama.cpp/build/bin/libggml*.so* .
-COPY tools/llama.cpp/build/bin/libllama*.so* .
-COPY tools/llama.cpp/build/bin/libmtmd*.so* .
+COPY libggml-*.so* libggml.so* .
+COPY libllama-*.so* libllama.so* .
+COPY libmtmd*.so* .
 
 # Copy models into the image
 COPY models/ ./models/

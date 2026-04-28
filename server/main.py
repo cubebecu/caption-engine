@@ -1782,8 +1782,8 @@ const batchList = document.getElementById('batch-list');
 const batchProcessBtn = document.getElementById('batch-process-btn');
 let lastLogsLines = [];
 
-const ALLOWED_EXTS = {'.png': true, '.jpg': true, '.jpeg': true, '.gif': true, '.bmp': true, '.webp': true};
-const BATCH_MAX_SIZE = 16 * 1024 * 1024;
+const ALLOWED_EXTS = {'.png': true, '.jpg': true, '.jpeg': true, '.gif': true, '.bmp': true};
+const BATCH_MAX_SIZE = 8 * 1024 * 1024;
 
 // Tabs
 document.querySelectorAll('.tab').forEach(tab => {
@@ -1843,25 +1843,6 @@ function handleFiles(fileList) {
     supported: isSupportedImage(f),
   }));
 
-  if (batchQueue.classList.contains('visible')) {
-    batchFiles.push(...files);
-    showBatchQueue();
-    return;
-  }
-
-  if (files.length === 1 && files[0].supported && !currentImage) {
-    handleFile(files[0].file);
-    return;
-  }
-
-  if (currentImage) {
-    batchFiles = [{ file: currentImage, name: currentImageName, size: 0, supported: true }, ...files];
-  } else {
-    batchFiles = files;
-  }
-  showBatchQueue();
-}
-
   if (files.length === 1 && files[0].supported) {
     handleFile(files[0].file);
     return;
@@ -1884,6 +1865,7 @@ function handleFile(file) {
     img.src = e.target.result;
     dropzone.style.display = 'none';
     document.querySelector('.paste-box').style.display = 'none';
+    document.getElementById('file-select-btn').parentElement.style.display = 'none';
     previewContainer.classList.add('visible');
     captionBtn.disabled = false;
   };
@@ -1912,10 +1894,9 @@ function showBatchQueue() {
     batchList.appendChild(item);
   });
 
-  currentImage = null;
-  currentImageName = '';
   dropzone.style.display = 'none';
   document.querySelector('.paste-box').style.display = 'none';
+  document.getElementById('file-select-btn').parentElement.style.display = 'none';
   previewContainer.classList.remove('visible');
   batchQueue.classList.add('visible');
 }
@@ -1924,11 +1905,10 @@ document.getElementById('batch-clear-btn').addEventListener('click', clearBatch)
 
 function clearBatch() {
   batchFiles = [];
-  currentImage = null;
-  currentImageName = '';
   batchQueue.classList.remove('visible');
   dropzone.style.display = '';
   document.querySelector('.paste-box').style.display = '';
+  document.getElementById('file-select-btn').parentElement.style.display = '';
   fileInput.value = '';
   folderInput.value = '';
 }
