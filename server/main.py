@@ -823,14 +823,20 @@ async def caption_batch(
             detail=f"Too many images: {len(images)}. Maximum: {BATCH_MAX_IMAGES}",
         )
 
+    # Read all images into memory BEFORE creating StreamingResponse,
+    # otherwise Starlette closes UploadFile's SpooledTemporaryFile before the generator runs.
+    image_data = []
+    for idx, image in enumerate(images):
+        content = await image.read()
+        filename = image.filename or f"image_{idx}.png"
+        image_data.append((content, filename))
+
     async def event_generator():
         processed = 0
         failed = 0
-        for idx, image in enumerate(images):
-            filename = image.filename or f"image_{idx}.png"
+        for idx, (content, filename) in enumerate(image_data):
             try:
-                yield f"event: progress\ndata: {json.dumps({'current': idx + 1, 'total': len(images), 'filename': filename})}\n\n"
-                content = await image.read()
+                yield f"event: progress\ndata: {json.dumps({'current': idx + 1, 'total': len(image_data), 'filename': filename})}\n\n"
                 resp = await _process_single_image(content, filename, prompt)
                 yield f"event: result\ndata: {json.dumps(resp.model_dump())}\n\n"
                 processed += 1
@@ -2016,6 +2022,12 @@ function handleBatchEvent(type, data) {
   } else if (type === 'done') {
     batchStatus.textContent = `Done — ${data.processed} processed, ${data.failed} failed`;
     batchProgressBar.style.width = '100%';
+    // Mark any remaining processing items as done (the last image never gets a follow-up progress event)
+    for (const item of document.querySelectorAll('.batch-item.processing')) {
+      item.querySelector('.status').textContent = '✓';
+      item.classList.remove('processing');
+      item.classList.add('done');
+    }
     showToast(`Batch complete: ${data.processed} processed, ${data.failed} failed`, data.failed ? 'error' : 'success');
     loadJobs();
   }
