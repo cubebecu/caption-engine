@@ -1,11 +1,13 @@
 """
-caption-engine: FastAPI service for image captioning with Gemma-3-4B multimodal.
+caption-engine: FastAPI service for image captioning.
+
+Supports two backends via LLM_BACKEND env var:
+  - local (default): Gemma-3-4B multimodal via llama.cpp, requires GPU
+  - anthropic: Claude vision API via Anthropic Messages API
 
 Embeds a Web UI with:
   - Tab 1: Caption (image upload + paste)
   - Tab 2: Configuration (system prompt, output format)
-
-GPU enforcement: requires >=4GB VRAM, refuses CPU fallback.
 """
 
 import asyncio
@@ -31,13 +33,21 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from PIL import Image
 from pydantic import BaseModel
-import aiohttp
+
+try:
+    import aiohttp
+except ImportError:
+    aiohttp = None  # type: ignore[assignment]
+
+from .backends import CaptionResult, AnthropicBackend
 
 logger = logging.getLogger("caption-engine")
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
+
+LLM_BACKEND = os.getenv("LLM_BACKEND", "local")  # "local" or "anthropic"
 
 MODEL_PATH = os.getenv("MODEL_PATH", "/app/models/gemma-3-4b-it/gemma-3-4b-it-Q4_K_M.gguf")
 MMPROJ_PATH = os.getenv("MMPROJ_PATH", "/app/models/gemma-3-4b-it/mmproj-model-f16.gguf")
@@ -47,6 +57,9 @@ GPU_LAYERS = int(os.getenv("GPU_LAYERS", "32"))
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "512"))
 CONTEXT_SIZE = int(os.getenv("CONTEXT_SIZE", "4096"))
 WORKERS = int(os.getenv("WORKERS", "1"))
+
+# Anthropic-specific config (only used when LLM_BACKEND=anthropic)
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL")  # None = auto-detect latest sonnet
 
 # Default system prompt for technical documentation
 _DEFAULT_PROMPT_PATH = Path(__file__).resolve().parent.parent / "system_prompt_default.md"
@@ -88,6 +101,9 @@ LOG_BACKUP_COUNT = int(os.getenv("LOG_BACKUP_COUNT", "5"))
 
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 JOBS_DIR.mkdir(parents=True, exist_ok=True)
+
+# ── Backend instance (set during lifespan startup) ──
+_llm_backend: Optional["AnthropicBackend"] = None  # type: ignore[name-defined]
 
 # In-memory job registry: job_id → job metadata
 _jobs: dict[str, dict] = {}
@@ -552,26 +568,40 @@ async def _stop_llama_server():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # GPU check at startup
+    global _llm_backend
+
     logger.info("=== Starting caption-engine ===")
-    logger.info("MODEL_PATH=%s MMPROJ_PATH=%s GPU_LAYERS=%d", MODEL_PATH, MMPROJ_PATH, GPU_LAYERS)
+    logger.info("LLM_BACKEND=%s", LLM_BACKEND)
     _load_jobs()
-    check_gpu_requirements()
-    await _start_llama_server()
 
-    # Start background health monitor
-    monitor_task = asyncio.create_task(_llama_health_monitor())
-    logger.info("Health monitor started (interval=%ds)", int(os.getenv("LLAMA_HEALTH_INTERVAL", "15")))
+    if LLM_BACKEND == "anthropic":
+        logger.info("Initializing Anthropic backend...")
+        _llm_backend = AnthropicBackend()
+        await _llm_backend.initialize()
+        logger.info("Anthropic backend ready: %s", _llm_backend._model_name)
+    else:
+        # Local llama-server mode (default)
+        logger.info("MODEL_PATH=%s MMPROJ_PATH=%s GPU_LAYERS=%d", MODEL_PATH, MMPROJ_PATH, GPU_LAYERS)
+        check_gpu_requirements()
+        await _start_llama_server()
 
-    logger.info("caption-engine ready on port 8000")
+        # Start background health monitor
+        monitor_task = asyncio.create_task(_llama_health_monitor())
+        logger.info("Health monitor started (interval=%ds)", int(os.getenv("LLAMA_HEALTH_INTERVAL", "15")))
+
+    logger.info("caption-engine ready on port %d", int(os.getenv("FASTAPI_PORT", "8000")))
     yield
+
     logger.info("=== Shutting down caption-engine ===")
-    monitor_task.cancel()
-    try:
-        await monitor_task
-    except asyncio.CancelledError:
-        pass
-    await _stop_llama_server()
+    if LLM_BACKEND == "anthropic" and _llm_backend:
+        await _llm_backend.close()
+    elif LLM_BACKEND == "local":
+        monitor_task.cancel()
+        try:
+            await monitor_task
+        except asyncio.CancelledError:
+            pass
+        await _stop_llama_server()
 
 
 # ---------------------------------------------------------------------------
@@ -580,8 +610,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="caption-engine",
-    description="Image captioning with Gemma-3-4B multimodal via llama.cpp",
-    version="0.2.0",
+    description="Image captioning with local LLM (llama.cpp) or Anthropic API",
+    version="0.3.0",
     lifespan=lifespan,
 )
 
@@ -701,8 +731,40 @@ async def web_ui():
     return HTMLResponse(content=WEB_UI_HTML)
 
 
+async def _caption_via_llama(b64: str, prompt: str) -> CaptionResult:  # type: ignore[name-defined]
+    """Call local llama-server for captioning (OpenAI-compatible API)."""
+    payload = {
+        "model": MODEL_PATH,
+        "messages": [
+            {"role": "system", "content": prompt},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
+                    {"type": "text", "text": "Describe this image in detail. Focus on technical content."},
+                ],
+            },
+        ],
+        "max_tokens": 2048,
+        "temperature": 0.3,
+        "stream": False,
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f"{LLAMA_HOST}/v1/chat/completions", json=payload) as resp:
+            if resp.status != 200:
+                body = await resp.text()
+                logger.error("llama-server error HTTP %d: %s", resp.status, body[:500])
+                raise HTTPException(status_code=502, detail=f"llama.cpp error (HTTP {resp.status}): {body}")
+            result = await resp.json()
+
+    caption_text = result["choices"][0]["message"]["content"]
+    model_name = result.get("model") or "Gemma-3-4B"
+    return CaptionResult(caption_text=caption_text, model_name=model_name)  # type: ignore[name-defined]
+
+
 async def _process_single_image(image_bytes: bytes, filename: str, prompt: str) -> CaptionResponse:
-    """Process a single image through llama-server and save a job.
+    """Process a single image through the active LLM backend and save a job.
 
     Returns CaptionResponse on success.
     Raises HTTPException on validation or inference failure.
@@ -720,68 +782,48 @@ async def _process_single_image(image_bytes: bytes, filename: str, prompt: str) 
 
     start = time.time()
 
-    payload = {
-        "model": MODEL_PATH,
-        "messages": [
-            {
-                "role": "system",
-                "content": prompt,
-            },
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{b64}"
-                        },
-                    },
-                    {"type": "text", "text": "Describe this image in detail. Focus on technical content."},
-                ],
-            }
-        ],
-        "max_tokens": 2048,
-        "temperature": 0.3,
-        "stream": False,
-    }
-
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(f"{LLAMA_HOST}/v1/chat/completions", json=payload) as resp:
-                if resp.status != 200:
-                    body = await resp.text()
-                    logger.error("llama-server error HTTP %d: %s", resp.status, body[:500])
-                    raise HTTPException(status_code=502, detail=f"llama.cpp error (HTTP {resp.status}): {body}")
-                result = await resp.json()
+        if LLM_BACKEND == "anthropic" and _llm_backend is not None:
+            result = await _llm_backend.caption(b64, prompt)
+        else:
+            result = await _caption_via_llama(b64, prompt)
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("llama-server request failed: %s", str(e), exc_info=True)
-        raise HTTPException(status_code=502, detail=f"llama.cpp error: {e}")
+        logger.error("Caption request failed: %s", str(e), exc_info=True)
+        raise HTTPException(status_code=502, detail=f"LLM error: {e}")
 
     elapsed_ms = (time.time() - start) * 1000
-    caption_text = result["choices"][0]["message"]["content"]
-    model_name = result.get("model") or "Gemma-3-4B"
 
-    logger.info("Caption generated: %s tokens, %.1fms, model=%s", len(caption_text.split()), elapsed_ms, model_name)
+    logger.info(
+        "Caption generated: %s tokens, %.1fms, model=%s",
+        len(result.caption_text.split()), elapsed_ms, result.model_name,
+    )
 
     # Save job
     job_id = _save_job(
         image_bytes=image_bytes,
-        caption_text=caption_text,
-        model_name=model_name,
+        caption_text=result.caption_text,
+        model_name=result.model_name,
         processing_time_ms=round(elapsed_ms, 1),
         img_size=img_size,
         filename=filename or "image.png",
     )
 
     return CaptionResponse(
-        caption=caption_text,
-        model=model_name,
+        caption=result.caption_text,
+        model=result.model_name,
         processing_time_ms=round(elapsed_ms, 1),
         image_size=img_size,
         job_id=job_id,
     )
+
+
+async def _backend_healthy() -> bool:
+    """Check if the active LLM backend is healthy."""
+    if LLM_BACKEND == "anthropic":
+        return True  # Anthropic health is checked lazily on each request
+    return _llama_healthy
 
 
 @app.post("/caption", response_model=CaptionResponse)
@@ -792,8 +834,7 @@ async def caption(
     """Generate a caption from an image."""
     prompt = system_prompt or SYSTEM_PROMPT
 
-    # ── Health gate: reject if llama-server is down ──
-    if not _llama_healthy:
+    if not await _backend_healthy():
         raise HTTPException(
             status_code=503,
             detail="Vision model is unavailable (restarting). Retry in a few seconds.",
@@ -811,7 +852,7 @@ async def caption_batch(
     """Process multiple images sequentially, streaming results via SSE."""
     prompt = system_prompt or SYSTEM_PROMPT
 
-    if not _llama_healthy:
+    if not await _backend_healthy():
         raise HTTPException(
             status_code=503,
             detail="Vision model is unavailable (restarting). Retry in a few seconds.",
@@ -856,6 +897,16 @@ async def caption_batch(
 @app.get("/health", response_model=HealthResponse)
 async def health():
     logger.info("Health check requested")
+    if LLM_BACKEND == "anthropic":
+        model_name = _llm_backend._model_name if _llm_backend else "unknown"
+        return HealthResponse(
+            status="ok",
+            model=model_name,
+            gpu_layers=0,
+            context_size=CONTEXT_SIZE,
+            workers=WORKERS,
+            batch_size=BATCH_SIZE,
+        )
     return HealthResponse(
         status="ok",
         model=MODEL_PATH,
@@ -868,7 +919,10 @@ async def health():
 
 @app.get("/health/model")
 async def health_model():
-    """Check if llama-server (vision model) is reachable."""
+    """Check if the active LLM backend is reachable."""
+    if LLM_BACKEND == "anthropic" and _llm_backend:
+        healthy = await _llm_backend.health_check()
+        return {"status": "ok" if healthy else "error"}
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{LLAMA_HOST}/v1/models", timeout=aiohttp.ClientTimeout(total=3)) as resp:
@@ -881,6 +935,16 @@ async def health_model():
 @app.get("/config")
 async def get_config():
     logger.info("Config requested")
+    if LLM_BACKEND == "anthropic":
+        model_name = _llm_backend._model_name if _llm_backend else "unknown"
+        return ConfigResponse(
+            system_prompt=SYSTEM_PROMPT,
+            model_path=model_name,
+            gpu_layers=0,
+            context_size=CONTEXT_SIZE,
+            workers=WORKERS,
+            batch_size=BATCH_SIZE,
+        )
     return ConfigResponse(
         system_prompt=SYSTEM_PROMPT,
         model_path=MODEL_PATH,
@@ -2297,7 +2361,8 @@ setInterval(checkHealth, 15000);
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    check_gpu_requirements()
+    if LLM_BACKEND != "anthropic":
+        check_gpu_requirements()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     # Rotating file handler: max 10MB per file, keep 5 backups
     file_handler = logging.handlers.RotatingFileHandler(

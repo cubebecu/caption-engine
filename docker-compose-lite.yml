@@ -1,0 +1,26 @@
+services:
+  caption-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.lite
+    image: ghcr.io/cubebecu/caption-engine-lite:latest
+    container_name: caption-engine-lite
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - LLM_BACKEND=anthropic
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-}  # leave empty for auto-detect latest sonnet
+      - FASTAPI_PORT=8000
+      - CONTEXT_SIZE=4096
+      - WORKERS=1
+      - JOBS_DIR=/app/jobs
+      - LOG_FILE=/app/logs/server.log
+      - BATCH_MAX_IMAGES=100
+      - BATCH_MAX_IMAGE_SIZE_MB=8
+    volumes:
+      - job-data:/app/jobs
+
+volumes:
+  job-data:

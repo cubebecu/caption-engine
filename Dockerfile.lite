@@ -1,0 +1,33 @@
+FROM python:3.12-slim
+
+# Avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LLM_BACKEND=anthropic
+
+# Install system deps for Pillow
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy Python deps first (layer caching)
+COPY requirements-lite.txt .
+RUN pip3 install --no-cache-dir -r requirements-lite.txt
+
+# Copy application code
+COPY server/ ./server/
+COPY system_prompt_default.md .
+
+# Create dirs for jobs + logs
+RUN mkdir -p /app/jobs /app/logs
+
+# Expose FastAPI port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run
+CMD ["python3", "-m", "server.main"]
