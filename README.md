@@ -120,10 +120,8 @@ Full technical reference — API endpoints, configuration, GPU requirements, bui
 ---
 
 ## Author
-
-Built by [cubebecu](https://github.com/cubebecu) as part of an evaluation of
-local agentic coding setups. The entire codebase was written using a local model
-running on a single NVIDIA GPU
+> [!info]
+Built by [cubebecu](https://github.com/cubebecu) as part of an evaluation of local agentic coding setups. The entire codebase was written using a local model running on a single NVIDIA GPU
 
 ## License
 
