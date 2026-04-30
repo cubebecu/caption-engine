@@ -1,6 +1,6 @@
 services:
   caption-engine:
-    image: ghcr.io/cubebecu/caption-engine:latest
+    image: ghcr.io/cubebecu/caption-engine:v1.0.1
     container_name: caption-engine
     runtime: nvidia
     restart: unless-stopped

@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.lite
-    image: ghcr.io/cubebecu/caption-engine-lite:latest
+    image: ghcr.io/cubebecu/caption-engine-lite:v1.0.1
     container_name: caption-engine-lite
     restart: unless-stopped
     ports:
