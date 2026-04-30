@@ -7,6 +7,8 @@
 Upload a screenshot, diagram, or CLI output — get a structured markdown description.  
 Built for on-device inference — with an API fallback for machines without a GPU.
 
+**Built as part of an evaluation of local agentic coding setups. The entire codebase was written using a local model running on a RTX 3090**
+
 [![Docker Pulls](https://img.shields.io/badge/Docker-GHCR.io-2496ED?logo=docker)](https://github.com/cubebecu/caption-engine/pkgs/container/caption-engine)
 [![Local LLM Eval](https://img.shields.io/badge/Local_LLM_Eval-Qwen3.6_27B_·_RTX_3090-blue?logo=nvidia)]()
 [![Full GPU](https://img.shields.io/badge/Full_version-GPU-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-gpus)
