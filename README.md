@@ -8,9 +8,9 @@ Upload a screenshot, diagram, or CLI output — get a structured markdown descri
 Built for on-device inference — with an API fallback for machines without a GPU.
 
 [![Docker Pulls](https://img.shields.io/badge/Docker-GHCR.io-2496ED?logo=docker)](https://github.com/cubebecu/caption-engine/pkgs/container/caption-engine)
-![Built offline with Qwen](https://img.shields.io/badge/Built%20offline%20with-Qwen-615CED)
-[![Full GPU](https://img.shields.io/badge/Full-GPU-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-gpus)
-[![Lite Online](https://img.shields.io/badge/Lite-Online-D97757?logo=anthropic&logoColor=white)](https://www.anthropic.com/api)
+[![Local LLM Eval](https://img.shields.io/badge/Local_LLM_Eval-Qwen3.6_27B_·_RTX_3090-blue?logo=nvidia)]()
+[![Full GPU](https://img.shields.io/badge/Full_version-GPU-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-gpus)
+[![Lite Online](https://img.shields.io/badge/Lite_version-Online-D97757?logo=anthropic&logoColor=white)](https://www.anthropic.com/api)
 </div>
 
 ![Web UI](raw/demo-2.gif)
